@@ -3,8 +3,8 @@ name: MariaDB Multi-Region Galera Cluster
 id: multiregion-galera-cluster
 jpsVersion: '1.5.2'
 description:
-  text: A MariaDB Galera cluster that can be deployed across several regions.
-  short: MariaDB Multi-Region Galera cluster.
+  text: MariaDB Multi-Region Galera cluster is a solution that creates an advanced, highly available database cluster across three different regions of the Virtuozzo Application Platform.
+  short: MariaDB Galera Cluster deployed across multiple regions.
 logo: /images/mariadb-multi-logo.png
 
 categories:
@@ -25,9 +25,9 @@ settings:
       required: true
       min: 3
       max: 3
-    
+
     - type: dockertags
-      caption: Database version
+      caption: Database Version
       nodeType: mariadb-dockerized
       name: tag
       hidden: false
@@ -37,28 +37,28 @@ settings:
       name: topology
       default: standalone
       required: true
-      values:        
+      values:
         - value: standalone
-          caption: Based on MariaDB standalone across regions
+          caption: Based on MariaDB standalone (per region)
         - value: cluster
-          caption: Based on MariaDB Galera cluster across regions
+          caption: Based on MariaDB Galera cluster (per region)
 
     - caption: None
       inputType: hidden
       hidden: true
       type: list
       name: nodes
-      dependsOn:                 
+      dependsOn:
         topology:
             standalone:
               - value: 1
-            cluster:    
+            cluster:
               - value: 3
 
     - type: checkbox
       name: is_proxysql
-      caption: Add ProxySQL for SQL Load Balancing
-      value: true      
+      caption: Add ProxySQL for load balancing
+      value: true
 
     - type: separator
 
@@ -69,7 +69,7 @@ settings:
       randomName: true
       showFullDomain: false
       required: true
-      
+
     - type: string
       name: displayName
       caption: Display Name
@@ -84,7 +84,7 @@ globals:
   orch_user: orch-${fn.random}
   orch_pswd: ${fn.password(10)}
   galera_server_id: ${fn.random}
-  
+
 onInstall:
   - initGlobals
   - env.group.CreateGroup:
@@ -98,13 +98,13 @@ onInstall:
         success: proxysql
   - else:
       setGlobals:
-        success: sqldb    
-  
+        success: sqldb
+
 actions:
   initGlobals:
     - script: |
         var regions = '${settings.regions}'.split(','), index, resp,
-            onAfterReturn = { setGlobals: {} }, 
+            onAfterReturn = { setGlobals: {} },
             glbs = onAfterReturn.setGlobals;
         resp = jelastic.env.control.GetRegions(appid, session);
         if (resp.result != 0) return resp;
@@ -157,7 +157,7 @@ actions:
               }
             });
           }
-        }  
+        }
         return { result: 0, onAfterReturn: { 'marketplace.jps.install': actions } };
 
   setupClusters:
@@ -185,8 +185,8 @@ actions:
             "galera_server_id": "${globals.galera_server_id}",
             "install_galera_cluster": "true"
           }
-        });       
-        return { result: 0, onAfterReturn: { 'marketplace.jps.install': actions } };          
+        });
+        return { result: 0, onAfterReturn: { 'marketplace.jps.install': actions } };
 
   setupGlobals:
     - script: |
