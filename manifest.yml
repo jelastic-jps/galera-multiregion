@@ -4,7 +4,7 @@ id: multiregion-galera-cluster
 jpsVersion: '1.5.2'
 description:
   text: MariaDB Multi-Region Galera cluster is a solution that creates an advanced, highly available database cluster across three different regions of the Virtuozzo Application Platform.
-  short: MariaDB Multi-Region Galera Cluster
+  short: MariaDB Galera Cluster deployed across multiple regions.
 logo: /images/mariadb-multi-logo.png
 
 categories:
