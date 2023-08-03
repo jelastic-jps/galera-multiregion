@@ -1,0 +1,23 @@
+type: update
+name: Setup ProxySQL
+id: setup-proxy-geo-galera
+
+globals:
+  galera_nodes_address: ${settings.galera_nodes_address}
+  weight: ${settings.weight}
+  
+onInstall:
+  - script: |
+      var galeraNodeAddress = '${globals.galera_nodes_address}'.split(',');
+      var weight = '${globals.weight}';
+      var cmd1, cmd2 = "MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\"";
+      for (var i = 0, n = galeraNodeAddress.length; i < n; i ++) {
+        cmd1 = "MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e \"INSERT INTO mysql_servers (hostgroup_id, port, hostname, weight) VALUES (2, 3306, '" + galeraNodeAddress + "'," + weight + ");\"";
+        resp =  api.environment.control.ExecCmdByGroup({
+          envName: '${env.envName}', 
+          nodeGroup: 'proxysql',
+          commandList: toJSON([{"command": cmd1}, {"command": cmd2}])
+        });
+        if (resp.result != 0) return resp;
+      }
+      return { result: 0 };

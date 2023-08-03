@@ -1,0 +1,59 @@
+jpsType: update
+id: geo-galera-proxysql-manager
+name: ProxySQL for multiregion Galera Cluster
+description: Geo Galera Cluster Manager
+baseUrl: https://raw.githubusercontent.com/sych74/galera-multiregion-cluster/main
+
+globals:
+  env_name: ${settings.env_name}
+
+onInstall:
+  - getClusterEnvs
+  - setupBalancing
+
+actions:
+  
+  getClusterEnvs:
+    - script: ${baseUrl}/scripts/getClusterEnvs.js
+      envName: ${globals.env_name}-db-1
+    - setGlobals:
+        DBEnvs: ${response.items.join(,)}
+    - script: ${baseUrl}/scripts/getClusterEnvs.js
+      envName: ${globals.env_name}-lb-1
+    - setGlobals:
+        ProxySQLEnvs: ${response.items.join(,)}
+
+  setupBalancing:
+    - script: |
+        function getIndex(envName){
+          var envNameSeparator = "-", index, tmp;
+          tmp = envName.split(envNameSeparator);
+          index = tmp.pop();
+          if (/\d+/.test(index)) {
+            index = parseInt(index, 10);
+          } else {
+            index = null;
+          }        
+          return index;
+        }  
+    
+        var DBEnvs = '${globals.DBEnvs}'.split(',');
+        var cmd1, cmd2 = "MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e \"LOAD MYSQL SERVERS TO RUNTIME; SAVE MYSQL SERVERS TO DISK;\"";
+        var actions = [], galera_nodes_address = "", weight, nodes, envInfo, execCmd;
+        for (var k = 0, l = DBEnvs.length; k < l; k ++) {
+          weight = getIndex(DBEnvs[k]) == getIndex('${env.envName}') ? 10000 : 1;
+          envInfo = jelastic.env.control.GetEnvInfo(DBEnvs[k], session);
+          if (envInfo.result != 0) return envInfo;
+          for (var i = 0, nodes = envInfo.nodes; i < nodes.length; i++) {
+            if (nodes[i].nodeGroup == 'sqldb') {
+              cmd1 = "MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e \"INSERT INTO mysql_servers (hostgroup_id, port, hostname, weight) VALUES (2, 3306, '" + nodes[i].address + "'," + weight + ");\"";
+              execCmd =  api.environment.control.ExecCmdByGroup({
+                envName: '${env.envName}', 
+                nodeGroup: 'proxysql',
+                commandList: toJSON([{"command": cmd1}, {"command": cmd2}])
+              });
+              if (execCmd.result != 0) return execCmd;
+            }
+          }
+        }
+        return { result: 0 };
