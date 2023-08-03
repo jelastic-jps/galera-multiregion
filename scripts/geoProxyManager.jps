@@ -2,7 +2,7 @@ jpsType: update
 id: geo-galera-proxysql-manager
 name: ProxySQL for multiregion Galera Cluster
 description: Geo Galera Cluster Manager
-baseUrl: https://raw.githubusercontent.com/sych74/galera-multiregion-cluster/main
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/galera-multiregion/master
 
 globals:
   env_name: ${settings.env_name}
