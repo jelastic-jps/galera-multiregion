@@ -1,62 +1,76 @@
-<p align="center"> 
+<p align="center">
 <img style="padding: 0 15px; float: left;" src="images/mariadb-multi-logo.png" width="70">
 </p>
 
-## MariaDB Galera Сluster Across Different Regions with Embedded Load Balancing.
+## MariaDB Multi-Region Galera Cluster
 
-MariaDB Multi-Region Galera cluster is a solution that creates an advanced highly available cluster on top of managed Virtuozzo Application Platform dockerized stack templates. 
-
-### Database topology
-Multi-Region MariaDB clustering is based on [Primary-Primary](https://www.virtuozzo.com/application-platform-docs/auto-clustering/#mariadb) topology. With this topology an asynchronous replication ensures data spread across database cluster servers which fits better for the cases when Regions (Data centres) are located far away from each other. In such a way the latency influence on transaction commit can be compensated. As for disaster recovery one or more Secondary nodes can be added for the required Cross-Region deployment. Thus, the recommended topology may look like: Primary-Primary-Secondary in case there are three Regions available. Every database server or load balancer node in the cluster topology is created in a separate environment. After creation such environments are combined into Multi-Region cluster.
+MariaDB Multi-Region Galera cluster is a solution that creates an advanced, highly available cluster across several regions of the Virtuozzo Application Platform. The solution implements so-called certification-based replication. The basic idea is that the transaction to be replicated - the write set - not only contains the database rows to copy but also includes information about all the locks held by the database (i.e., InnoDB) during the transaction. Each node then certifies the replicated write set against other write sets in the applier queue, and if there are no conflicting locks, we know that the write set can be applied. At this point, the transaction is considered committed, after which each node continues to apply it to the InnoDB tablespace.
 
 
-<p align="left"> 
-<img src="images/topology-cluster-mms.png" width="500">
-</p>
+## Database Topology
 
-The package deployes Highly Available [ProxySQL Load Balancer](https://www.proxysql.com/) layer in front of the cluster in order to distribute requests between Primary nodes.
+The Multi-Region Galera Cluster consists of node groups deployed into three different regions. Depending on the required level of performance and high availability, you can choose between two topology options:
 
-### High Availability and Failover
-
-Main purpose of Cross-Region DB clusters is high availability and failover capabilities at the data centre level: database is accessible even if one of Regions becomes unavailable. Thus, if one of the Primary Region will fail, cluster will be available and keep handling Writes and Read queries. In case of both Primary Regions become unavailable the Secondary Region can be used to handle Reads and Writes with no data loss. Just update entry point setting in your database client application replacing ProxySQL hostnames with the hostname of database server located in Secondary Region.
-Upon Cross-Region cluster, customer is able to select multiple Regions and select "Primary" Region that should host Primary servers and "Secondary" Region that should host Secondary database servers.
-
-
-### Installation Process
-
-Go to [VAP Marketplace](https://www.virtuozzo.com/application-platform-docs/marketplace/), find **Multi-Region MariaDB Cluster** application and run it. 
+- **Based on MariaDB standalone (per region)** – provides a single MariaDB instance in each of the three regions that form the Galera cluster
 
 <p align="left">
-<img src="images/mp-install.png" width="600">
+<img src="images/galera-multi-region-single-node.svg" width="400">
 </p>
 
-In the opened installation window specify the **Environment** name. This name will be used for Multi-Region environments isolation. For example, if you use **mdbcluster** name for the **Environment** field, all the cluster parts will be put into the **Database cluster mdbcluster** [environment group](https://www.virtuozzo.com/application-platform-docs/environment-groups/).
+- **Based on MariaDB Galera cluster (per region)** – creates Galera cluster (3 nodes) in each region (9 nodes total)
 
 <p align="left">
-<img src="images/env-group.png" width="500">
+<img src="images/galera-multi-region-3-node.svg" width="400">
 </p>
 
-The order of region selection matters. 
-Finally, click on **Install**. So, use tooltip to realize which region fits better for the Primary role and which ones for the Secondary role.
+Both topologies provide out-of-box high availability and failover capabilities for your database cluster. In case of a cluster node failure, both topologies ensure that the database cluster works without downtime.
 
-<p align="left">
-<img src="images/install.png" width="500">
-</p>
-
-After successful installation, you’ll receive an email based on your environment topology with an entry point details and access credentials like in the successfull installation window.
-
-<p align="left">
-<img src="images/success.png" width="400">
-</p>
-
-### Entry Point
-
-Entry point comprises two items one per each Primary node. Every item contains name of region and ProxySQL node hostname.
-In case both Primary regions will fail use [hostname](https://www.virtuozzo.com/application-platform-docs/container-dns-hostnames/) or IP address of secondary node as an entry point.
-
-<p align="left">
-<img src="images/dashboard-topology.png" width="600">
-</p>
+Additionally, the package provides a setting to include/exclude highly available [ProxySQL Load Balancer](https://www.proxysql.com/) layer in front of the cluster, which will distribute requests between nodes.
 
 
+## High Availability and Failover
 
+The main purpose of Cross-Region DB clusters is high availability and failover capabilities. For Galera, if one node in the cluster fails, the other nodes continue to operate as usual. When the failed node comes back online, it automatically synchronizes with the other nodes before it is allowed back into the cluster. The same approach is applied for the single region failure, so *<u>no data is lost in single node/region failures</u>*.
+
+
+## Installation Process
+
+1\. Go to the Virtuozzo Application Platform [Marketplace](https://www.virtuozzo.com/application-platform-docs/marketplace/), find the ***MariaDB Multi-Region Galera Cluster*** application, and **Install** it.
+
+![multi-regional Galera marketplace](images/01-multi-regional-galera-marketplace.png)
+
+2\. Provide the following details in the opened installation window:
+
+- **Regions** – choose three regions on the platform from the drop-down list
+- **Database Version** – select the preferred tag version for the MariaDB stacks used for the Galera cluster
+- **Topology** – choose between the *standalone* and *Galera cluster* options per region
+- **Add ProxySQL for load balancing** – tick to add ProxySQL in front of your cluster (as a separate environment in each region)
+- **Environment** – provide a name that will be used for environments’ naming and multi-region environments isolation (i.e., [environment group](https://www.virtuozzo.com/application-platform-docs/environment-groups/) name)
+- **Display Name** – custom [alias](https://www.virtuozzo.com/application-platform-docs/environment-aliases/) for the environments
+
+![multi-regional Galera installation](images/02-multi-regional-galera-installation.png)
+
+3\. Click **Install** and wait for the installation success notification with entry point details and access credentials.
+
+![multi-regional Galera success](images/03-multi-regional-galera-success.png)
+
+Additionally, you’ll receive an email with the same information.
+
+
+## Entry Point
+
+The multi-regional Galera cluster can be accessed from each region. The required entry point can be comprised of the preferred region name and ProxySQL node (if added) or SQL layer:
+
+- with ProxySQL
+
+```
+node${ID}-${envName}-lb-{1|2|3}.${domain}:3306
+```
+
+- without ProxySQL
+
+```
+sqldb.${envName}-db-{1|2|3}.${domain}:3306
+```
+
+You can view the exact entry points for your multi-regional Galera cluster in the after-installation success window and email.
