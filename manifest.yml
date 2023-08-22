@@ -1,6 +1,6 @@
 type: install
-name: MariaDB Multi-Region Galera Cluster
-id: multiregion-galera-cluster
+name: MariaDB Multi-Region Galera Cluster PoC
+id: multiregion-galera-cluster-poc
 jpsVersion: '1.5.2'
 description:
   text: MariaDB Multi-Region Galera cluster is a solution that creates an advanced, highly available database cluster across three different regions of the Virtuozzo Application Platform.
@@ -12,7 +12,7 @@ categories:
   - apps/popular
   - apps/clusters
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/galera-multiregion/master
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/galera-multiregion/multi
 
 settings:
   fields:
