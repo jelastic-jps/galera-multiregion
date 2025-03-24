@@ -49,7 +49,7 @@ actions:
               cmd1 = "MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e \"INSERT INTO mysql_servers (hostgroup_id, port, hostname, weight) VALUES (2, 3306, '" + nodes[i].address + "'," + weight + ");\"";
               execCmd =  api.environment.control.ExecCmdByGroup({
                 envName: '${env.envName}', 
-                nodeGroup: 'proxysql',
+                nodeGroup: 'proxy',
                 commandList: toJSON([{"command": cmd1}, {"command": cmd2}])
               });
               if (execCmd.result != 0) return execCmd;
