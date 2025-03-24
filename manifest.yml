@@ -13,7 +13,7 @@ categories:
   - apps/clusters
   - apps/databases
 
-baseUrl: https://raw.githubusercontent.com/jelastic-jps/galera-multiregion/master
+baseUrl: https://raw.githubusercontent.com/sych74/galera-multiregion/master
 
 settings:
   fields:
