@@ -6,7 +6,7 @@ nodes:
   - nodeType: proxysql
     count: 1
     cloudlets: 8
-    nodeGroup: proxysql
+    nodeGroup: proxy
     skipNodeEmails: true
     env:
       REPLICA_USER: ${settings.repl_user:repl-test}
@@ -35,12 +35,12 @@ onBeforeMigrate:
     type: warning
     message: Migration is not supported for multiregion cluster.
 
-onBeforeRemoveNode[proxysql]:
+onBeforeRemoveNode[proxy]:
   stopEvent:
     type: warning
     message: Scaling is not supported for multiregion cluster.
 
-onBeforeAddNode[proxysql]:
+onBeforeAddNode[proxy]:
   stopEvent:
     type: warning
     message: Scaling is not supported for multiregion cluster.
@@ -55,14 +55,14 @@ onInstall:
 
 actions:
   getReplicaUser:
-    - env.control.GetContainerEnvVarsByGroup[proxysql]
+    - env.control.GetContainerEnvVarsByGroup[proxy]
     - setGlobals:
         REPLICA_USER: ${response.object.REPLICA_USER}
         REPLICA_PSWD: ${response.object.REPLICA_PSWD}
 
   setupOrchestrator:
     - log: Orchestrator configuration
-    - cmd [proxysql]: |-
+    - cmd [proxy]: |-
         mysql -h 127.0.0.1 -P3360 -uroot -e "DROP DATABASE IF EXISTS orchestrator;"
         mysql -h 127.0.0.1 -P3360 -uroot -e "CREATE DATABASE IF NOT EXISTS orchestrator;"
         mysql -h 127.0.0.1 -P3360 -uroot -e "GRANT ALL PRIVILEGES ON orchestrator.* TO '${globals.ORCH_USER}'@'127.0.0.1' IDENTIFIED BY '${globals.ORCH_PASS}';"
@@ -78,7 +78,7 @@ actions:
 
   setupProxySQL:
     - log: ProxySQL configuration
-    - cmd[proxysql]: |-
+    - cmd[proxy]: |-
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_galera_hostgroups (writer_hostgroup,backup_writer_hostgroup,reader_hostgroup,offline_hostgroup,active,max_writers,writer_is_also_reader,max_transactions_behind) 
         VALUES (2,4,3,1,1,3,1,100);"
         MYSQL_PWD=admin mysql -h 127.0.0.1 -P6032 -uadmin -e "INSERT INTO mysql_users (username,password,default_hostgroup) VALUES ('${globals.DB_USER}', '${globals.DB_PASS}', 2);"
