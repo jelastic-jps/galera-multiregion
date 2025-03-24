@@ -12,12 +12,18 @@ nodes:
       REPLICA_USER: ${settings.repl_user:repl-test}
       REPLICA_PSWD: ${settings.repl_pswd:abcABC123}
 
+
+mixins:
+  - https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0/scripts/proxy-common.yml
+
 globals:
   PATH: https://raw.githubusercontent.com/jelastic-jps/mysql-cluster/v3.0.0
   DB_USER: ${settings.db_user:user-test}
   DB_PASS: ${settings.db_pass:abcABC123}
-  ORCH_USER: ${settings.orch_user:orch-test}
-  ORCH_PASS: ${settings.orch_pswd:abcABC123}
+  ORCH_USER: ${settings.orch_user:orch-[fn.random]}
+  ORCH_PASS: ${settings.orch_pswd:[fn.password(20)]}
+  ADMIN_USER: ${settings.admin_user:admin-[fn.random]}
+  ADMIN_PASS: ${settings.admin_pswd:[fn.password(20)]}
 
 onBeforeClone:
   stopEvent:
@@ -43,7 +49,8 @@ onInstall:
   - api: env.control.SetEnvDisplayName
     displayName: ${env.envName} ProxySQL ${env.hostGroup.displayName}
   - getReplicaUser
-  - setupOrchestrator
+  - disableOrchestrator
+  - setupProxySQLGUI
   - setupProxySQL
 
 actions:
