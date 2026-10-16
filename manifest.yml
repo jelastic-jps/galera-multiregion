@@ -142,88 +142,70 @@ actions:
 
   createEnvs:
     - script: |
-        var regions = '${settings.regions}'.split(','),
-        ownerUid = '${globals.ownerUid}',
-        resp, cluster, n, payload;
-        for (cluster = 1, n = regions.length + 1; cluster < n; cluster ++) {
-          payload = {
-            session: session,
-            appid: appid,
+        var regions = '${settings.regions}'.split(','), actions = [];
+        for (var cluster = 1, n = regions.length + 1; cluster < n; cluster ++) {
+          actions.push({
             jps: "${baseUrl}/scripts/sqldb.jps?_r=${fn.random}",
             envName: "${settings.envName}-db-" + cluster,
             loggerName: "${settings.envName}-db-" + cluster,
             envGroups: "Database cluster ${settings.envName}",
             region: "${globals.region-" + cluster + "}",
+            ownerUid: "${globals.ownerUid}",
             settings: {
-              repl_user: "${globals.repl_user}",
-              repl_pswd: "${globals.repl_pswd}",
-              tag: "${settings.tag}",
-              nodes: "${settings.nodes}"
+              "repl_user": "${globals.repl_user}",
+              "repl_pswd": "${globals.repl_pswd}",
+              "tag": "${settings.tag}",
+              "nodes": "${settings.nodes}"
             }
-          };
-          if (ownerUid) payload.ownerUid = ownerUid;
-          resp = api.marketplace.jps.Install(payload);
-          if (resp.result != 0) return resp;
+          });
           if ('${settings.is_proxysql}' == 'true') {
-            payload = {
-              session: session,
-              appid: appid,
+            actions.push({
               jps: "${baseUrl}/scripts/proxysql.jps?_r=${fn.random}",
               envName: "${settings.envName}-lb-" + cluster,
               loggerName: "${settings.envName}-lb-" + cluster,
               envGroups: "Database cluster ${settings.envName}",
               region: "${globals.region-" + cluster + "}",
+              ownerUid: "${globals.ownerUid}",
               settings: {
-                db_user: "${globals.db_user}",
-                db_pass: "${globals.db_pass}",
-                repl_user: "${globals.repl_user}",
-                repl_pswd: "${globals.repl_pswd}",
-                orch_user: "${globals.orch_user}",
-                orch_pswd: "${globals.orch_pswd}"
+                "db_user": "${globals.db_user}",
+                "db_pass": "${globals.db_pass}",
+                "repl_user": "${globals.repl_user}",
+                "repl_pswd": "${globals.repl_pswd}",
+                "orch_user": "${globals.orch_user}",
+                "orch_pswd": "${globals.orch_pswd}"
               }
-            };
-            if (ownerUid) payload.ownerUid = ownerUid;
-            resp = api.marketplace.jps.Install(payload);
-            if (resp.result != 0) return resp;
+            });
           }
         }
-        return { result: 0 };
+        return { result: 0, onAfterReturn: { 'marketplace.jps.install': actions } };
 
   setupClusters:
     - script: |
-        var ProxySQLEnvs = '${globals.ProxySQLEnvs}'.split(','),
-        ownerUid = '${globals.ownerUid}',
-        resp, i, n, payload;
+        var ProxySQLEnvs = '${globals.ProxySQLEnvs}'.split(','), actions = [];;
         if ('${settings.is_proxysql}' == 'true') {
-          for (i = 0, n = ProxySQLEnvs.length; i < n; i ++) {
-            payload = {
-              session: session,
-              appid: appid,
+          for (var i = 0, n = ProxySQLEnvs.length; i < n; i ++) {
+            actions.push({
               jps: "${baseUrl}/scripts/geoProxyManager.jps?_r=${fn.random}",
               envName: ProxySQLEnvs[i],
-              settings: { env_name: "${settings.envName}" }
-            };
-            if (ownerUid) payload.ownerUid = ownerUid;
-            resp = api.marketplace.jps.Install(payload);
-            if (resp.result != 0) return resp;
+              settings: {
+                "env_name": "${settings.envName}"
+              }
+            });
           }
         }
-        payload = {
-          session: session,
-          appid: appid,
+        actions.push({
           jps: "${baseUrl}/scripts/geoGaleraManager.jps?_r=${fn.random}",
           envName: "${settings.envName}-db-1",
           settings: {
-            master_env_name: "${settings.envName}-db-1",
-            db_cluster_url: "${globals.db_cluster_url}",
-            db_user: "${globals.db_user}",
-            db_pass: "${globals.db_pass}",
-            galera_server_id: "${globals.galera_server_id}",
-            install_galera_cluster: "true"
+            "master_env_name": "${settings.envName}-db-1",
+            "db_cluster_url": "${globals.db_cluster_url}",
+            "db_user": "${globals.db_user}",
+            "db_pass": "${globals.db_pass}",
+            "galera_server_id": "${globals.galera_server_id}",
+            "install_galera_cluster": "true"
           }
-        };
-        if (ownerUid) payload.ownerUid = ownerUid;
-        return api.marketplace.jps.Install(payload);
+        });
+        return { result: 0, onAfterReturn: { 'marketplace.jps.install': actions } };
 
   setupGlobals:
     - script: |
